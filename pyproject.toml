@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "coherra"
+version = "0.1.0"
+description = "Structured memory auditor and repair engine for Sibyl Memory — MCP server + CLI."
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+dependencies = [
+    "mcp>=1.0.0,<2",
+    "sibyl-memory-client>=0.5.0",
+]
+
+[project.scripts]
+# CLI entry point:  coherra health / scan / issues / fix
+coherra     = "coherra.cli:main"
+# MCP server entry point (for .mcp.json / Claude Code config)
+coherra-mcp = "coherra.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["coherra"]
