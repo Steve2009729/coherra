@@ -1,7 +1,8 @@
 "use client";
 
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useState } from "react";
+import { encodeFunctionData, parseUnits } from "viem";
 import {
   Activity,
   ShieldCheck,
@@ -14,17 +15,35 @@ import {
   Wallet,
   ArrowRight,
   Sparkles,
+  CreditCard,
 } from "lucide-react";
 import { PageTransition } from "@/components/motion/PageTransition";
 import { FadeInUp } from "@/components/motion/FadeInUp";
 import { StaggerContainer, StaggerItem } from "@/components/motion/StaggerContainer";
 import { triggerAudit, AuditResponse } from "@/lib/api";
 
+const erc20Abi = [
+  {
+    name: "transfer",
+    type: "function",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+  },
+] as const;
+
 export default function AuditPage() {
   const { ready, authenticated, user, connectWallet, login } = usePrivy();
+  const { wallets } = useWallets();
+
   const [dbPath, setDbPath] = useState("~/.sibyl-memory/memory.db");
   const [txHash, setTxHash] = useState("");
   const [loading, setLoading] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [result, setResult] = useState<AuditResponse | null>(null);
 
   const primaryWallet = user?.wallet?.address;
@@ -46,6 +65,73 @@ export default function AuditPage() {
       setResult({ ok: false, error: "Client Error", message: err.message });
     } finally {
       setLoading(false);
+    }
+  };
+
+  /**
+   * Triggers real on-chain USDC payment on Base mainnet via connected Privy wallet.
+   */
+  const handlePayOnChain = async () => {
+    if (!authenticated) {
+      login();
+      return;
+    }
+
+    if (!wallets || wallets.length === 0) {
+      connectWallet();
+      return;
+    }
+
+    const activeWallet =
+      wallets.find((w) => w.address.toLowerCase() === primaryWallet?.toLowerCase()) ||
+      wallets[0];
+
+    if (!activeWallet) {
+      setPaymentStatus("No active wallet connected");
+      return;
+    }
+
+    const challenge = result?.accepts?.[0];
+    const payeeAddress = challenge?.payee || "0x1BFAe4EE12c8f2bF17B8EEb8Ea0BcB32AdbB240B";
+    const usdcContract = challenge?.contract_address || "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+    const amountStr = challenge?.amount || "0.015";
+
+    setPaying(true);
+    setPaymentStatus("Preparing on-chain USDC transfer transaction...");
+
+    try {
+      // 0.015 USDC with 6 decimals = 15000 units
+      const amountUnits = parseUnits(amountStr, 6);
+      const calldata = encodeFunctionData({
+        abi: erc20Abi,
+        functionName: "transfer",
+        args: [payeeAddress as `0x${string}`, amountUnits],
+      });
+
+      setPaymentStatus("Requesting signature from Privy wallet...");
+      const provider = await activeWallet.getEthereumProvider();
+      const realTxHash = (await provider.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: activeWallet.address,
+            to: usdcContract,
+            data: calldata,
+            value: "0x0",
+          },
+        ],
+      })) as string;
+
+      setPaymentStatus(`Transaction broadcasted: ${realTxHash}. Retrying audit with payment proof...`);
+      setTxHash(realTxHash);
+
+      // Retry audit with real transaction hash proof
+      await handleRunAudit(realTxHash);
+    } catch (err: any) {
+      console.error("On-chain payment failed:", err);
+      setPaymentStatus(`Payment Error: ${err.message || err}`);
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -119,7 +205,7 @@ export default function AuditPage() {
 
             <button
               onClick={() => handleRunAudit()}
-              disabled={loading}
+              disabled={loading || paying}
               className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-base"
             >
               {loading ? (
@@ -182,12 +268,21 @@ export default function AuditPage() {
                     </div>
                   )}
 
+                  {paymentStatus && (
+                    <div className="p-3 rounded-xl bg-slate-950 border border-amber-900/60 text-xs font-mono text-amber-300 flex items-center gap-2">
+                      {paying && <RefreshCw className="w-4 h-4 animate-spin text-amber-400 shrink-0" />}
+                      <span>{paymentStatus}</span>
+                    </div>
+                  )}
+
                   <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
                     <button
-                      onClick={() => handleRunAudit("0x4a9b2c7e1f8d3a6e9f5b2c8d1e4a7b3c6f9e2d5a8b1c4e7f3a6b9c2d5e8f1a4")}
-                      className="w-full sm:w-auto px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20"
+                      onClick={handlePayOnChain}
+                      disabled={paying || loading}
+                      className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 disabled:opacity-50"
                     >
-                      <Sparkles className="w-4 h-4" /> Simulate Paid Proof Retry
+                      <CreditCard className="w-4 h-4" />
+                      {paying ? "Processing Payment..." : `Pay ${result.accepts?.[0]?.amount || "0.015"} USDC On-Chain & Execute Audit`}
                     </button>
                   </div>
                 </div>
