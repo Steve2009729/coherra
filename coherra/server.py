@@ -16,6 +16,9 @@ Checkpoint 3 tools:
 Checkpoint 4 tools:
   - coherra_repair       apply one repair to a specific issue
   - coherra_repair_safe  batch-apply all safe (non-contradiction) repairs
+
+Phase 2 — Feature A tools:
+  - coherra_onboard      import JSON data, categorize, write, audit, repair
 """
 from __future__ import annotations
 
@@ -351,6 +354,65 @@ def build_server() -> FastMCP:
                 "failed_count":            fail_count,
                 "results":                 results,
             }
+        except Exception as e:
+            _err(e)
+
+    # ------------------------------------------------------------------
+    # coherra_onboard  (Phase 2 — Feature A)
+    # ------------------------------------------------------------------
+
+    @mcp.tool()
+    def coherra_onboard(import_data: dict) -> dict[str, Any]:
+        """Import JSON data from another tool into Coherra.
+
+        Runs the full onboarding pipeline:
+          1. Parse the JSON into individual records
+          2. Categorize each record (category, name, confidence)
+          3. Write to Sibyl Memory using the Coherra schema
+          4. Audit for contradictions, duplicates, staleness
+          5. Auto-repair safe issues (duplicates + stale)
+          6. Flag contradictions for manual review
+
+        Args:
+            import_data: A dict or list representing the JSON export.
+                         Accepts flat dicts, nested dicts, lists of dicts
+                         (with key/value fields), or lists of strings.
+
+        Returns:
+            {
+                "ok": True,
+                "imported": N,            # records written
+                "auto_cleaned": X,        # safe issues fixed
+                "flagged_for_review": Y,  # contradictions needing manual fix
+            }
+        """
+        try:
+            from .onboard import onboard, ImportParseError
+            result = onboard(import_data)
+            return {
+                "ok": True,
+                "imported": result["imported"],
+                "auto_cleaned": result["auto_cleaned"],
+                "flagged_for_review": result["flagged_for_review"],
+                "write_errors": result.get("write_errors", []),
+                "issues": [
+                    {
+                        "severity": i.get("severity"),
+                        "category": i.get("category"),
+                        "name": i.get("name"),
+                        "detail": i.get("detail"),
+                    }
+                    for i in result.get("issues", [])
+                ],
+            }
+        except ImportParseError as e:
+            raise ToolError(json.dumps({
+                "ok": False,
+                "code": "IMPORT_PARSE_ERROR",
+                "record_index": e.record_index,
+                "field": e.field,
+                "message": str(e),
+            }))
         except Exception as e:
             _err(e)
 

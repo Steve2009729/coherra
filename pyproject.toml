@@ -14,11 +14,18 @@ dependencies = [
     "sibyl-memory-client>=0.5.0",
 ]
 
+[project.optional-dependencies]
+onboard = [
+    "google-generativeai>=0.4.0",
+]
+
 [project.scripts]
-# CLI entry point:  coherra health / scan / issues / fix
+# CLI entry point:  coherra health / scan / issues / fix / onboard / serve
 coherra     = "coherra.cli:main"
 # MCP server entry point (for .mcp.json / Claude Code config)
 coherra-mcp = "coherra.__main__:main"
+# HTTP server entry point (x402 payment gate)
+coherra-serve = "coherra.http_server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["coherra"]

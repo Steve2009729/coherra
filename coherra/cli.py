@@ -8,12 +8,16 @@ Commands:
   coherra issues              -- list every flagged issue from the last scan
   coherra fix <issue_id>      -- apply a repair (interactive for contradictions)
   coherra fix --all           -- batch-apply all safe repairs
+  coherra onboard --import f  -- import a JSON export from another tool
+  coherra serve [--port P]    -- launch x402 payment-gated HTTP server
 """
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
+from pathlib import Path
 from typing import Any
 
 
@@ -418,6 +422,110 @@ def cmd_fix(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# coherra onboard
+# ---------------------------------------------------------------------------
+
+def cmd_onboard(args: argparse.Namespace) -> int:
+    """Import a JSON export from another tool into Coherra."""
+    from .client import DEFAULT_DB_PATH
+    from .onboard import onboard, ImportParseError
+
+    import_file = getattr(args, "import_file", None)
+    if not import_file:
+        print(f"  {yellow('Usage:')} coherra onboard --import <file.json>")
+        return 1
+
+    # Check if Sibyl Memory is initialised
+    if not DEFAULT_DB_PATH.parent.exists():
+        print(f"\n  {red('Sibyl Memory is not initialised.')}")
+        print(f"  Run {bold('sibyl init')} first to set up Sibyl Memory,")
+        print(f"  then re-run: {bold('coherra onboard --import ' + import_file)}\n")
+        return 1
+
+    # Read the JSON file
+    file_path = Path(import_file)
+    if not file_path.exists():
+        print(f"  {red('File not found:')} {import_file}")
+        return 1
+
+    try:
+        raw_data = json.loads(file_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"  {red('Invalid JSON:')} {e}")
+        return 1
+    except OSError as e:
+        print(f"  {red('Cannot read file:')} {e}")
+        return 1
+
+    print(f"\n  {bold('Coherra Onboarding')}  ·  {dim(import_file)}")
+    print(f"  {dim('─' * 50)}")
+
+    try:
+        result = onboard(raw_data)
+    except ImportParseError as e:
+        print(f"\n  {red('Import failed:')} {e}")
+        return 1
+    except Exception as e:
+        print(f"\n  {red('Unexpected error:')} {e}")
+        return 1
+
+    imported = result["imported"]
+    auto_cleaned = result["auto_cleaned"]
+    flagged = result["flagged_for_review"]
+    write_errors = result.get("write_errors", [])
+    issues = result.get("issues", [])
+
+    # Print summary
+    print(f"\n  {bold('Summary')}")
+    print(f"  {'Records imported':20s}: {green(str(imported))}")
+    print(f"  {'Auto-cleaned':20s}: {yellow(str(auto_cleaned)) if auto_cleaned else green('0')}")
+    print(f"  {'Flagged for review':20s}: {red(str(flagged)) if flagged else green('0')}")
+
+    if write_errors:
+        print(f"\n  {red('Write errors:')}")
+        for err in write_errors:
+            print(f"    {dim('·')} {err}")
+
+    if flagged > 0:
+        print(f"\n  {red('Contradictions detected — resolve manually:')}")
+        print(f"  Run {bold('coherra issues')} to see them,")
+        print(f"  then {bold('coherra fix <id>')} to resolve each one.")
+
+    if issues:
+        print(f"\n  {dim('Issues involving imported data:')}")
+        for issue in issues:
+            sev = issue.get('severity', '')
+            cat = issue.get('category', '')
+            name = issue.get('name', '')
+            tag = _sev_color(sev, f'[{sev}]')
+            print(f"    {tag}  {bold(cat + '/' + name)}  {dim(issue.get('detail', '')[:60])}")
+
+    print(f"\n  {dim('Run')} {bold('coherra scan')} {dim('to see the full health score.')}\n")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# coherra serve
+# ---------------------------------------------------------------------------
+
+def cmd_serve(args: argparse.Namespace) -> int:
+    """Launch the x402 payment-gated HTTP server."""
+    from .http_server import create_app
+    import uvicorn
+
+    host = getattr(args, "host", "127.0.0.1")
+    port = getattr(args, "port", 8080)
+
+    print(f"\n  {bold('Launching Coherra x402 HTTP Server')}  ·  {cyan('http://' + host + ':' + str(port))}")
+    print(f"  {dim('Target network:')} Base mainnet (chain_id=8453)")
+    print(f"  {dim('Route:')}          POST /audit\n")
+
+    app = create_app()
+    uvicorn.run(app, host=host, port=port)
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
 
@@ -451,6 +559,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_fix.add_argument("--all",       action="store_true", help="Fix all safe issues.")
     p_fix.add_argument("--safe-only", action="store_true", help="(implied by --all)")
     p_fix.set_defaults(func=cmd_fix)
+
+    p_onboard = sub.add_parser("onboard", help="Import a JSON export from another tool.")
+    p_onboard.add_argument(
+        "--import", dest="import_file", required=True, metavar="FILE",
+        help="Path to the JSON file to import.",
+    )
+    p_onboard.set_defaults(func=cmd_onboard)
+
+    p_serve = sub.add_parser("serve", help="Launch x402 HTTP server.")
+    p_serve.add_argument("--host", default="127.0.0.1", help="Host address (default 127.0.0.1).")
+    p_serve.add_argument("--port", type=int, default=8080, help="Port number (default 8080).")
+    p_serve.set_defaults(func=cmd_serve)
 
     return parser
 

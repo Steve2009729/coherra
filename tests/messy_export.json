@@ -1,0 +1,58 @@
+{
+  "notes_export": {
+    "app_name": "BrainDump Pro",
+    "export_date": "2026-05-15",
+    "format_version": "2.1"
+  },
+  "user_profile": {
+    "preferred_language": "Python",
+    "editor_choice": "Vim",
+    "timezone": "US/Eastern",
+    "favorite_framework": "FastAPI"
+  },
+  "contacts": {
+    "team_lead": "Jordan",
+    "mentor_name": "Dr. Sarah Chen",
+    "project_manager": "Alex Rivera"
+  },
+  "project_notes": {
+    "current_project": "Nighthawk",
+    "repo_url": "github.com/alex/nighthawk",
+    "deploy_target": "GCP Cloud Run",
+    "main_language": "Python 3.12"
+  },
+  "random_facts": [
+    {"key": "coffee_order", "value": "oat milk latte, no sugar"},
+    {"name": "standup_time", "content": "9:15 AM daily"},
+    {"label": "pet_name", "text": "Luna (golden retriever)"},
+    {
+      "title": "old_deploy_date",
+      "description": "Last deploy was 2025-11-01",
+      "timestamp": "2025-11-01T10:00:00Z"
+    },
+    {
+      "key": "vague_thought",
+      "value": "something about maybe switching to Rust someday possibly"
+    },
+    {
+      "key": "team_lead_again",
+      "value": "Jordan"
+    },
+    {
+      "key": "preferred_editor",
+      "value": "VSCode"
+    },
+    {
+      "key": "fav_language",
+      "value": "Python is the best"
+    },
+    {
+      "key": "old_sprint_deadline",
+      "value": "2025-06-01"
+    },
+    {
+      "key": "test_framework",
+      "value": "pytest"
+    }
+  ]
+}

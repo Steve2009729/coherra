@@ -61,7 +61,10 @@ _NAME_STOPWORDS = frozenset({
     "current", "active", "main", "default",
     # structural key-name words — these appear in many unrelated keys
     "team", "style", "type", "mode", "info", "data", "name",
-    "time", "date", "flag", "list", "item", "note",
+    "time", "date", "flag", "list", "item", "note", "notes",
+    "project", "projects", "user", "profile", "contact", "contacts",
+    "export", "fact", "facts", "random", "app", "choice", "order",
+    "setting", "settings", "config", "detail", "details",
 })
 
 # Duplicate detector tuning
