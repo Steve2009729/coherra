@@ -47,27 +47,27 @@ export default function HomePage() {
 
             <FadeInUp delay={0.2}>
               <h1 className="text-4xl sm:text-7xl font-extrabold tracking-tight text-white leading-tight">
-                Continuous Drift Audit &amp; Safe Repair for{" "}
+                Audit &amp; Repair Your{" "}
                 <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  AI Memory Stores
+                  Sibyl Memory
                 </span>
               </h1>
             </FadeInUp>
 
             <FadeInUp delay={0.3}>
               <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
-                Detect contradictory facts, prune duplicate keys, and refresh stale entities in Sibyl Memory before model output quality degrades.
+                Coherra catches contradictions, duplicates, and stale facts in your Sibyl Memory — then repairs them automatically. Pay per audit in USDC on Base, no subscriptions required.
               </p>
             </FadeInUp>
 
             <FadeInUp delay={0.4}>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
                 <Link
-                  href="/audit"
+                  href="/login"
                   className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 text-base"
                 >
-                  <Activity className="w-5 h-5" />
-                  Launch Live Audit Flow
+                  <Zap className="w-5 h-5" />
+                  Get Started
                   <ArrowRight className="w-4 h-4 ml-1" />
                 </Link>
                 <Link
@@ -75,7 +75,7 @@ export default function HomePage() {
                   className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 font-semibold flex items-center justify-center gap-2 transition-all text-base"
                 >
                   <Terminal className="w-5 h-5 text-purple-400" />
-                  View CLI &amp; MCP Docs
+                  View Docs
                 </Link>
               </div>
             </FadeInUp>
