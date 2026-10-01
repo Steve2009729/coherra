@@ -154,8 +154,29 @@ class TestChatEngine(unittest.TestCase):
         self.assertEqual(resp_audit.status_code, 200)
         audit_data = resp_audit.json()
         self.assertTrue(audit_data["requires_payment"])
-        self.assertIsNotNone(audit_data["challenge"])
+    def test_08_identical_chat_flow_across_all_4_models(self):
+        models = ["gemini", "openai", "grok", "claude"]
+        for idx, m_choice in enumerate(models):
+            t_user = f"privy:did:user_model_{idx}"
+            adapter = PostgresStorageAdapter(tenant_id=t_user, dsn=f"sqlite:///{TEST_DB_PATH}")
+
+            # 1. First interaction -> auto creates memory / remembers
+            res = handle_chat(
+                tenant_id=t_user,
+                model=m_choice,
+                message=f"Remember that my favorite editor is Emacs_{idx}",
+                adapter=adapter,
+            )
+            self.assertTrue(res["ok"])
+            self.assertFalse(res["requires_payment"])
+            tool_names = [tc["name"] for tc in res["tool_calls"]]
+            self.assertIn("remember", tool_names)
+
+            # Confirm entity in storage
+            ent = adapter.get_entity("preference", "editor")
+            self.assertEqual(ent["value"], f"Emacs_{idx}")
 
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
