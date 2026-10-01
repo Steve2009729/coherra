@@ -459,8 +459,13 @@ def _compute_health(issues: list[dict[str, Any]]) -> int:
 # Public entry point
 # ---------------------------------------------------------------------------
 
-def run_audit() -> dict[str, Any]:
+def run_audit(client: Any = None) -> dict[str, Any]:
     """Run a full Coherra audit.
+
+    Args:
+        client: Optional storage client.  When ``None`` (default), uses the
+                local Sibyl MemoryClient via ``open_client()`` (Track 2).
+                Pass a ``PostgresStorageAdapter`` instance for Track 1.
 
     Returns a result dict:
         {
@@ -475,7 +480,8 @@ def run_audit() -> dict[str, Any]:
         - Writes coherra:last_audit state
         - Appends a coherra_scan journal event
     """
-    client = open_client()
+    if client is None:
+        client = open_client()
     config = _load_config(client)
     thresholds = config.get("staleness_thresholds", _DEFAULT_CONFIG["staleness_thresholds"])
 

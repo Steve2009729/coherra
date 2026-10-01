@@ -327,6 +327,7 @@ def apply_repair(
     action: str,
     *,
     value: Any = None,
+    client: Any = None,
 ) -> dict[str, Any]:
     """Apply one repair to a specific issue.
 
@@ -338,6 +339,9 @@ def apply_repair(
                     contradiction: "keep_a" | "keep_b" | "merge_manual"
         value:    Required only for contradiction/merge_manual — the
                   correct canonical value to write.
+        client:   Optional storage client.  When ``None`` (default), uses the
+                  local Sibyl MemoryClient via ``open_client()`` (Track 2).
+                  Pass a ``PostgresStorageAdapter`` instance for Track 1.
 
     Returns:
         {ok, issue_id, severity, action_taken, archived, written}
@@ -346,7 +350,8 @@ def apply_repair(
         KeyError  if the issue_id is not found in the last audit.
         ValueError if the action is invalid for the severity.
     """
-    client = open_client()
+    if client is None:
+        client = open_client()
     issue  = _find_issue(client, issue_id)
     if issue is None:
         raise KeyError(
@@ -366,15 +371,20 @@ def apply_repair(
     raise ValueError(f"Unknown issue severity: {severity!r}")
 
 
-def apply_safe_repairs() -> list[dict[str, Any]]:
+def apply_safe_repairs(client: Any = None) -> list[dict[str, Any]]:
     """Auto-apply all safe repairs from the last audit.
 
     Safe = stale→archive and duplicate→merge only.
     Contradictions are NEVER auto-resolved.
 
+    Args:
+        client: Optional storage client.  When ``None`` (default), uses the
+                local Sibyl MemoryClient via ``open_client()`` (Track 2).
+
     Returns a list of repair summary dicts (one per fix applied).
     """
-    client   = open_client()
+    if client is None:
+        client = open_client()
     audit    = _get_last_audit(client)
     issues   = audit.get("issues_found", [])
     results: list[dict[str, Any]] = []
@@ -384,9 +394,9 @@ def apply_safe_repairs() -> list[dict[str, Any]]:
         iid      = issue.get("id", "")
         try:
             if severity == "stale":
-                results.append(apply_repair(iid, "archive"))
+                results.append(apply_repair(iid, "archive", client=client))
             elif severity == "duplicate":
-                results.append(apply_repair(iid, "merge"))
+                results.append(apply_repair(iid, "merge", client=client))
             # contradictions: skip silently
         except Exception as exc:
             results.append({
