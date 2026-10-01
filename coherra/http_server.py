@@ -280,6 +280,70 @@ async def handle_get_audit_history(request: Request) -> Response:
 
 
 # ---------------------------------------------------------------------------
+# POST /chat Endpoint Handler (Track 1 Multi-Model Chat)
+# ---------------------------------------------------------------------------
+
+async def handle_chat_endpoint(request: Request) -> Response:
+    """HTTP route handler for POST /chat."""
+    if request.method != "POST":
+        return JSONResponse({"ok": False, "error": "Method Not Allowed"}, status_code=405)
+
+    try:
+        raw_body = await request.body()
+        data = json.loads(raw_body.decode("utf-8")) if raw_body else {}
+
+        tenant_id = data.get("tenant_id") or data.get("privy_user_id") or "default"
+        model = data.get("model", "gemini")
+        message = data.get("message", "")
+        history = data.get("history", [])
+        
+        # Payment proof can come from header or body
+        payment_proof = (
+            request.headers.get("x-payment")
+            or request.headers.get("x-payment-proof")
+            or request.headers.get("authorization")
+            or data.get("payment_proof")
+        )
+
+        if not message and not data.get("tool_calls"):
+            return JSONResponse(
+                {"ok": False, "error": "Bad Request", "message": "Missing 'message' in chat request."},
+                status_code=400,
+            )
+
+        from .chat import handle_chat
+        res = handle_chat(
+            tenant_id=tenant_id,
+            model=model,
+            message=message,
+            history=history,
+            payment_proof=payment_proof,
+        )
+        return JSONResponse(res)
+
+    except json.JSONDecodeError as e:
+        return JSONResponse({"ok": False, "error": "Invalid JSON", "message": str(e)}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": "Internal Error", "message": str(e)}, status_code=500)
+
+
+# ---------------------------------------------------------------------------
+# Health & Root Handlers
+# ---------------------------------------------------------------------------
+
+async def handle_health(request: Request) -> Response:
+    """HTTP route handler for GET /health and GET /."""
+    return JSONResponse({
+        "ok": True,
+        "service": "coherra-backend",
+        "status": "healthy",
+        "version": "0.1.0",
+        "network": "base-mainnet",
+        "chain_id": 8453,
+    })
+
+
+# ---------------------------------------------------------------------------
 # Application Factory & Main Entry Point
 # ---------------------------------------------------------------------------
 
@@ -288,32 +352,49 @@ from starlette.middleware.cors import CORSMiddleware
 
 def create_app() -> Starlette:
     routes = [
+        Route("/", handle_health, methods=["GET"]),
+        Route("/health", handle_health, methods=["GET"]),
         Route("/audit", handle_audit, methods=["POST"]),
+        Route("/chat", handle_chat_endpoint, methods=["POST"]),
         Route("/link-wallet", handle_link_wallet, methods=["POST"]),
         Route("/audit-history/{privy_user_id}", handle_get_audit_history, methods=["GET"]),
     ]
+
+    # Configure CORS origins from environment or default to wildcard
+    allowed_origins_env = os.environ.get("COHERRA_ALLOWED_ORIGINS", "*")
+    if allowed_origins_env == "*":
+        allowed_origins = ["*"]
+    else:
+        allowed_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+
     middleware = [
         Middleware(
             CORSMiddleware,
-            allow_origins=["*"],
+            allow_origins=allowed_origins,
             allow_methods=["*"],
             allow_headers=["*"],
+            allow_credentials=True if allowed_origins != ["*"] else False,
         ),
         Middleware(AbuseGuardMiddleware),
     ]
     return Starlette(debug=False, routes=routes, middleware=middleware)
 
 
+app = create_app()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Coherra x402 HTTP Audit Server")
-    parser.add_argument("--host", default="127.0.0.1", help="Host to bind (default: 127.0.0.1)")
-    parser.add_argument("--port", type=int, default=8080, help="Port to bind (default: 8080)")
+    default_host = os.environ.get("HOST", "0.0.0.0")
+    default_port = int(os.environ.get("PORT", "8080"))
+    parser.add_argument("--host", default=default_host, help=f"Host to bind (default: {default_host})")
+    parser.add_argument("--port", type=int, default=default_port, help=f"Port to bind (default: {default_port})")
     args = parser.parse_args()
 
     print(f"Starting Coherra x402 HTTP server on {args.host}:{args.port}...")
-    app = create_app()
-    uvicorn.run(app, host=args.host, port=args.port)
+    uvicorn.run("coherra.http_server:app", host=args.host, port=args.port)
 
 
 if __name__ == "__main__":
     main()
+
