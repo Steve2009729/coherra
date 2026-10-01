@@ -82,31 +82,60 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Problem vs Solution Section */}
+        {/* Two-Track Explanation Section */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <FadeInUp>
-            <div className="p-8 sm:p-12 rounded-3xl bg-slate-900/40 border border-slate-800/80 backdrop-blur-xl grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <div className="w-10 h-10 rounded-xl bg-rose-950/80 border border-rose-800/60 flex items-center justify-center text-rose-400">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                <h2 className="text-2xl font-bold text-white">The Memory Drift Problem</h2>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  As AI assistants converse over months, memory stores accumulate conflicting facts, duplicated entity keys, and outdated preferences. Standard retrieval injects contradictory context directly into prompts, leading to agent hallucinations.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <h2 className="text-2xl font-bold text-white">The Coherra Solution</h2>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Coherra runs multi-pass scans to flag contradictions for human review while auto-repairing stale and duplicate records. Payment is handled on-chain via light x402 Base HTTP headers.
-                </p>
-              </div>
+            <div className="text-center space-y-3 mb-12">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white">
+                Two Ways to Use Coherra
+              </h2>
+              <p className="text-slate-400 max-w-xl mx-auto text-sm">
+                Whether you&apos;re a developer wiring up your own agent or someone who just wants to chat — Coherra has you covered.
+              </p>
             </div>
           </FadeInUp>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <FadeInUp delay={0.1}>
+              <div className="p-8 sm:p-10 rounded-3xl bg-slate-900/40 border border-slate-800/80 backdrop-blur-xl space-y-5 h-full flex flex-col hover:border-indigo-500/40 transition-all hover:shadow-xl hover:shadow-indigo-500/10">
+                <div className="w-12 h-12 rounded-xl bg-indigo-950 border border-indigo-800/60 flex items-center justify-center">
+                  <Terminal className="w-6 h-6 text-indigo-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">Connect Your Own Agent</h3>
+                <p className="text-slate-400 text-sm leading-relaxed flex-1">
+                  For technical users — connect your own AI agent (Claude Code, Cursor, or your own bot) via MCP or CLI, directly to your local Sibyl Memory. Audits run locally, fully private.
+                </p>
+                <Link
+                  href="/docs"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-slate-200 font-semibold transition-all text-sm w-fit"
+                >
+                  <Terminal className="w-4 h-4 text-indigo-400" />
+                  See Setup Docs
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </FadeInUp>
+
+            <FadeInUp delay={0.2}>
+              <div className="p-8 sm:p-10 rounded-3xl bg-slate-900/40 border border-slate-800/80 backdrop-blur-xl space-y-5 h-full flex flex-col hover:border-purple-500/40 transition-all hover:shadow-xl hover:shadow-purple-500/10">
+                <div className="w-12 h-12 rounded-xl bg-purple-950 border border-purple-800/60 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-purple-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">Chat With Coherra</h3>
+                <p className="text-slate-400 text-sm leading-relaxed flex-1">
+                  For everyone else — no setup needed, just sign up and chat. Choose between 4 models (Gemini, ChatGPT, Grok, Claude), and Coherra creates and manages your memory for you.
+                </p>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold shadow-lg shadow-indigo-600/20 transition-all text-sm w-fit"
+                >
+                  <Zap className="w-4 h-4" />
+                  Start Chatting
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </FadeInUp>
+          </div>
         </div>
 
         {/* Feature Grid with Staggered Cascades */}
