@@ -12,6 +12,18 @@ logging every single action permanently inside Sibyl Memory itself.
 
 ---
 
+## Live Production Deployment
+
+- **Production Domain (Web App & Chat)**: [https://coherra.xyz](https://coherra.xyz) (or [https://coherra.app](https://coherra.app))
+- **Production API & x402 Server**: [https://api.coherra.xyz](https://api.coherra.xyz) (or [https://api.coherra.app](https://api.coherra.app))
+- **Base Mainnet Smart Contract (USDC)**: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` (Chain ID: `8453`)
+- **Official Payout Address**: `0x1BFAe4EE12c8f2bF17B8EEb8Ea0BcB32AdbB240B`
+- **Track 1**: In-browser hosted multi-model chat with Gemini, OpenAI, Grok, and Claude.
+- **Track 2**: Local MCP/CLI memory audit and drift resolution.
+
+
+---
+
 ## Architecture
 
 ```
