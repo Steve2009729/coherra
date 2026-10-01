@@ -146,3 +146,77 @@ export async function triggerAudit(
     return { ok: false, error: "Network Error", message: err.message };
   }
 }
+
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+export interface ChatResponse {
+  ok: boolean;
+  model?: string;
+  message?: string;
+  tool_calls?: Array<{
+    name: string;
+    arguments: Record<string, any>;
+    result: Record<string, any>;
+  }>;
+  requires_payment?: boolean;
+  challenge?: {
+    x402: boolean;
+    version: string;
+    error: string;
+    detail: string;
+    accepts: Array<{
+      scheme: string;
+      network: string;
+      chain_id: number;
+      asset: string;
+      contract_address: string;
+      amount: string;
+      amount_raw: string;
+      payee: string;
+      rpc_url: string;
+    }>;
+  };
+  payment_status?: string;
+  error?: string;
+}
+
+/**
+ * Send a chat message to the Coherra Track 1 multi-model backend.
+ */
+export async function sendChatMessage(params: {
+  tenantId: string;
+  model: string;
+  message: string;
+  history?: ChatMessage[];
+  paymentProof?: string;
+}): Promise<ChatResponse> {
+  try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (params.paymentProof) {
+      headers["X-Payment"] = params.paymentProof;
+    }
+
+    const res = await fetch(`${API_BASE_URL}/chat`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        tenant_id: params.tenantId,
+        model: params.model,
+        message: params.message,
+        history: params.history || [],
+        payment_proof: params.paymentProof,
+      }),
+    });
+
+    const data = await res.json();
+    return data;
+  } catch (err: any) {
+    return { ok: false, error: "Network Error", message: err.message };
+  }
+}
+

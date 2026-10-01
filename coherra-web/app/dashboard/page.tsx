@@ -30,6 +30,7 @@ import { PageTransition } from "@/components/motion/PageTransition";
 import { FadeInUp } from "@/components/motion/FadeInUp";
 import { StaggerContainer, StaggerItem } from "@/components/motion/StaggerContainer";
 import { fetchAuditHistory, linkWallet, AuditHistoryRecord } from "@/lib/api";
+import { ChatPanel } from "@/components/chat-panel";
 
 export default function DashboardPage() {
   const { ready, authenticated, user, connectWallet } = usePrivy();
@@ -105,7 +106,7 @@ export default function DashboardPage() {
                 User Dashboard
               </h1>
               <p className="text-slate-400 text-sm mt-1">
-                Manage your authenticated account, linked wallets, and view health score trends over time.
+                Manage your hosted multi-tenant memory, chat with 4 AI models, and view health score trends.
               </p>
             </div>
             <button
@@ -132,7 +133,7 @@ export default function DashboardPage() {
             <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
                 <User className="w-4 h-4 text-indigo-400" />
-                Privy DID
+                Privy DID (Tenant ID)
               </div>
               <p className="text-sm font-mono text-white truncate font-medium">
                 {privyUserId}
@@ -174,6 +175,11 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
+        </FadeInUp>
+
+        {/* Track 1 Interactive Chat Console */}
+        <FadeInUp delay={0.15}>
+          <ChatPanel tenantId={privyUserId} />
         </FadeInUp>
 
         {/* Health Score Trend Chart Section */}
